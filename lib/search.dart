@@ -5,7 +5,7 @@ import 'package:flutter_foodroute/recipe.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class SearchScreen extends StatefulWidget {
-  SearchScreen({super.key});
+  const SearchScreen({super.key});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -87,8 +87,8 @@ class _SearchScreenState extends State<SearchScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back,
-            color: isDark ? Colors.white : primaryDark,
+            Icons.arrow_back_ios_new,
+            color: isDark ? Colors.blue : primaryDark,
           ),
           onPressed: () {
             Navigator.pushReplacement(
@@ -248,6 +248,7 @@ class _SearchScreenState extends State<SearchScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
               blurRadius: 15,
               offset: Offset(0, 8),
@@ -288,6 +289,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         radius: 16,
                         backgroundColor: isDark
                             ? Colors.black54
+                            // ignore: deprecated_member_use
                             : Colors.white.withOpacity(0.9),
                         child: Icon(
                           recipe.isFavorite

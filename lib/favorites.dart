@@ -45,7 +45,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new,
-            color: isDark ? cyanAccent : primaryDark,
+            color: isDark ? Colors.blue : primaryDark,
           ),
           onPressed: () {
             // Yeh aapko hamesha Meals screen par wapas le jayega

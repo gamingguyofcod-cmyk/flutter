@@ -13,9 +13,9 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   // Brand Colors
-  final Color primaryDark = const Color(0xFF080C10);
-  final Color brandBlue = const Color(0xFF008CFF);
-  final Color cyanAccent = const Color(0xFF18FFFF); // Aapka neon cyan color
+  final Color primaryDark = Color(0xFF080C10);
+  final Color brandBlue = Color(0xFF008CFF);
+  final Color cyanAccent = Color(0xFF18FFFF); // Aapka neon cyan color
 
   // --- 1. Ye function build se bahar rehna chahiye ---
   void refreshState() {
@@ -52,7 +52,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => const Meals(),
+                builder: (context) => Meals(),
               ), // Apni Meals class ka naam check kar lein
             );
           },
@@ -68,9 +68,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       body: favoriteRecipes.isEmpty
           ? _buildEmptyState(isDark)
           : GridView.builder(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               key: ValueKey(favoriteRecipes.length), // Refresh trigger
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 0.72,
                 crossAxisSpacing: 15,
@@ -106,7 +106,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       borderRadius: BorderRadius.circular(24),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1F24) : Colors.white,
+          color: isDark ? Color(0xFF1A1F24) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDark ? Colors.white10 : Colors.grey.shade100,
@@ -116,7 +116,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               // ignore: deprecated_member_use
               color: Colors.black.withOpacity(isDark ? 0.3 : 0.02),
               blurRadius: 10,
-              offset: const Offset(0, 5),
+              offset: Offset(0, 5),
             ),
           ],
         ),
@@ -128,7 +128,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
+                    borderRadius: BorderRadius.vertical(
                       top: Radius.circular(24),
                     ),
                     child: Image.network(
@@ -138,7 +138,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       height: double.infinity,
                       errorBuilder: (context, error, stackTrace) => Container(
                         color: Colors.grey,
-                        child: const Icon(Icons.broken_image),
+                        child: Icon(Icons.broken_image),
                       ),
                     ),
                   ),
@@ -157,7 +157,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             ? Colors.black54
                             // ignore: deprecated_member_use
                             : Colors.white.withOpacity(0.9),
-                        child: const Icon(
+                        child: Icon(
                           Icons.favorite,
                           size: 20,
                           color: Colors.red,
@@ -169,7 +169,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -183,7 +183,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     "${recipe.calories} kcal",
                     style: TextStyle(
@@ -211,7 +211,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             size: 80,
             color: isDark ? Colors.white10 : Colors.grey.shade300,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             "No favorites yet",
             style: TextStyle(
@@ -220,7 +220,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             "Start adding your favorite meals!",
             style: TextStyle(

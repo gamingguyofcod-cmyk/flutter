@@ -5,7 +5,7 @@ import 'package:flutter_foodroute/recipe.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  SearchScreen({super.key});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -14,10 +14,21 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   List<Recipe> filteredRecipes = [];
   String searchQuery = "";
-  String selectedFilter = "All"; // Naya variable selection track karne ke liye
+  String selectedFilter = "All";
 
-  final Color navyBlue = Color(0xFF008CFF);
-  final Color cyanColor = Color(0xFF008CFF); // Aapka brand color
+  // Brand Colors & Controller
+  final Color primaryDark = Color(0xFF080C10);
+  final Color cyanColor = Color(0xFF008CFF);
+  final ScrollController _filterScrollController = ScrollController();
+
+  final List<String> _filters = [
+    "All",
+    "High Protein",
+    "Keto",
+    "Vegan",
+    "Healthy",
+    "Fast Food",
+  ];
 
   @override
   void initState() {
@@ -25,29 +36,44 @@ class _SearchScreenState extends State<SearchScreen> {
     filteredRecipes = allRecipes;
   }
 
-  // --- UPDATED FILTER LOGIC ---
+  // --- FILTER LOGIC ---
   void _applyFilters() {
     setState(() {
       filteredRecipes = allRecipes.where((recipe) {
-        // 1. Search Logic
         bool matchesSearch = recipe.title.toLowerCase().contains(
           searchQuery.toLowerCase(),
         );
-
-        // 2. Chip Filter Logic
-        bool matchesChip = false;
-        if (selectedFilter == "All") {
-          matchesChip = true;
-        } else {
-          // Agar tags hain toh unme check karega, warna title mein word dhundega
-          matchesChip =
-              recipe.tags.contains(selectedFilter) ||
-              recipe.title.toLowerCase().contains(selectedFilter.toLowerCase());
-        }
-
+        bool matchesChip =
+            (selectedFilter == "All") ||
+            recipe.tags.contains(selectedFilter) ||
+            recipe.title.toLowerCase().contains(selectedFilter.toLowerCase());
         return matchesSearch && matchesChip;
       }).toList();
     });
+  }
+
+  // --- SMART AUTO SCROLL LOGIC (Aage aur Peeche ke liye) ---
+  void _scrollToIndex(int index) {
+    // 105.0 is approx width of chip + margin
+    double targetOffset = index * 105.0;
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    // Chip ko screen ke center mein lane ki math
+    double centerOffset = targetOffset - (screenWidth / 2) + 52.5;
+
+    if (_filterScrollController.hasClients) {
+      double maxScroll = _filterScrollController.position.maxScrollExtent;
+      double minScroll = _filterScrollController.position.minScrollExtent;
+
+      // Ensure offset range ke bahar na jaye
+      double finalOffset = centerOffset.clamp(minScroll, maxScroll);
+
+      _filterScrollController.animateTo(
+        finalOffset,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
@@ -55,26 +81,26 @@ class _SearchScreenState extends State<SearchScreen> {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? primaryDark : Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
-            color: isDark ? Colors.white : Color(0xFF080C10),
+            color: isDark ? Colors.white : primaryDark,
           ),
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const Meals()),
+              MaterialPageRoute(builder: (context) => Meals()),
             );
           },
         ),
         title: Text(
           "Discover Recipes",
           style: TextStyle(
-            color: isDark ? Colors.white : Color(0xFF080C10),
+            color: isDark ? Colors.white : primaryDark,
             fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
@@ -91,11 +117,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 searchQuery = value;
                 _applyFilters();
               },
-              style: TextStyle(
-                color: isDark
-                    ? Colors.white
-                    : const Color.fromARGB(255, 255, 255, 255),
-              ),
+              style: TextStyle(color: isDark ? Colors.white : Colors.black),
               decoration: InputDecoration(
                 hintText: "Search for Pizza, Pasta...",
                 hintStyle: TextStyle(color: Colors.grey),
@@ -110,16 +132,23 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
 
-          // Horizontal Filters (Updated to be Clickable)
+          // Horizontal Filters
           SizedBox(height: 10),
           SizedBox(
             height: 45,
-            child: ListView(
+            child: ListView.builder(
+              controller: _filterScrollController,
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: 20),
-              children: ["All", "High Protein", "Keto", "Vegan"].map((label) {
-                return _buildFilterChip(label, selectedFilter == label, isDark);
-              }).toList(),
+              itemCount: _filters.length,
+              itemBuilder: (context, index) {
+                return _buildFilterChip(
+                  _filters[index],
+                  selectedFilter == _filters[index],
+                  isDark,
+                  index,
+                );
+              },
             ),
           ),
 
@@ -141,11 +170,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ? Center(
                     child: Text(
                       "No recipes found!",
-                      style: TextStyle(
-                        color: isDark
-                            ? Colors.white70
-                            : const Color.fromARGB(137, 255, 255, 255),
-                      ),
+                      style: TextStyle(color: Colors.grey),
                     ),
                   )
                 : GridView.builder(
@@ -157,10 +182,11 @@ class _SearchScreenState extends State<SearchScreen> {
                       mainAxisSpacing: 15,
                     ),
                     itemCount: filteredRecipes.length,
-                    itemBuilder: (context, index) {
-                      final recipe = filteredRecipes[index];
-                      return _buildRecipeCard(context, recipe, isDark);
-                    },
+                    itemBuilder: (context, index) => _buildRecipeCard(
+                      context,
+                      filteredRecipes[index],
+                      isDark,
+                    ),
                   ),
           ),
         ],
@@ -168,21 +194,26 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // --- Updated Chip Widget with OnTap ---
-  Widget _buildFilterChip(String label, bool isSelected, bool isDark) {
+  Widget _buildFilterChip(
+    String label,
+    bool isSelected,
+    bool isDark,
+    int index,
+  ) {
     return GestureDetector(
       onTap: () {
         setState(() {
           selectedFilter = label;
           _applyFilters();
         });
+        _scrollToIndex(index);
       },
       child: Container(
         margin: EdgeInsets.only(right: 12),
         padding: EdgeInsets.symmetric(horizontal: 22),
         decoration: BoxDecoration(
           color: isSelected
-              ? cyanColor // Branding: Cyan color for selected
+              ? Color(0xFF008CFF)
               : (isDark ? Colors.white10 : Color(0xFFF4F7F9)),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -191,8 +222,8 @@ class _SearchScreenState extends State<SearchScreen> {
           label,
           style: TextStyle(
             color: isSelected
-                ? Color(0xFF080C10) // Dark text on Cyan
-                : (isDark ? Colors.white60 : Color(0xFF7D8C9B)),
+                ? primaryDark
+                : (isDark ? Colors.white : Colors.black87),
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
@@ -217,7 +248,6 @@ class _SearchScreenState extends State<SearchScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
               blurRadius: 15,
               offset: Offset(0, 8),
@@ -258,7 +288,6 @@ class _SearchScreenState extends State<SearchScreen> {
                         radius: 16,
                         backgroundColor: isDark
                             ? Colors.black54
-                            // ignore: deprecated_member_use
                             : Colors.white.withOpacity(0.9),
                         child: Icon(
                           recipe.isFavorite
@@ -294,7 +323,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   Text(
                     "${recipe.calories} kcal",
                     style: TextStyle(
-                      color: cyanColor, // Branding Cyan highlight
+                      color: Color(0xFF008CFF),
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),

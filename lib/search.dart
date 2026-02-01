@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foodroute/all_meals.dart';
 import 'package:flutter_foodroute/meals.dart';
@@ -92,7 +91,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 searchQuery = value;
                 _applyFilters();
               },
-              style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              style: TextStyle(
+                color: isDark
+                    ? Colors.white
+                    : const Color.fromARGB(255, 255, 255, 255),
+              ),
               decoration: InputDecoration(
                 hintText: "Search for Pizza, Pasta...",
                 hintStyle: TextStyle(color: Colors.grey),

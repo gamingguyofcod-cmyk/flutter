@@ -9,7 +9,6 @@ class Recipe {
   final String image;
   final String calories;
   bool isFavorite;
-
   Recipe({
     required this.title,
     required this.image,
@@ -45,32 +44,40 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Default Status Bar setup
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-      systemNavigationBarDividerColor: Colors.transparent,
-    ),
+    const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
 
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.manual,
-    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
-  ).then((_) {
-    runApp(const FoodRouteApp());
-  });
+  runApp(const FoodRouteApp());
 }
+
+// main.dart ke top par ye global variable bana dein
+ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 class FoodRouteApp extends StatelessWidget {
   const FoodRouteApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const WelcomePage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, ThemeMode currentMode, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          themeMode: currentMode, // Switch se ye change hoga
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primaryColor: Color(0xFF008CFF),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: Color(0xFF080C10), // Aapka Brand Dark
+            primaryColor: Color(0xFF008CFF), // Aapka Brand Cyan
+          ),
+          home: WelcomePage(),
+        );
+      },
     );
   }
 }
@@ -80,18 +87,10 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Welcome page hamesha dark overlay ke sath behtar lagti hai background image ki wajah se
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.black,
-        systemNavigationBarIconBrightness: Brightness.light, // Buttons white
-        systemNavigationBarDividerColor: Colors.transparent,
-      ),
+      value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        extendBody: false,
-        extendBodyBehindAppBar: false,
-
         body: Stack(
           children: [
             // Background Image
@@ -99,12 +98,12 @@ class WelcomePage extends StatelessWidget {
               child: RotatedBox(
                 quarterTurns: 3,
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     image: DecorationImage(
                       image: AssetImage('asset/welcome_bg.jpg'),
                       fit: BoxFit.cover,
                       colorFilter: ColorFilter.mode(
-                        Color.fromARGB(100, 0, 0, 0),
+                        Colors.black45,
                         BlendMode.darken,
                       ),
                     ),
@@ -115,27 +114,26 @@ class WelcomePage extends StatelessWidget {
 
             // Content
             SafeArea(
-              bottom: true,
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                  padding: EdgeInsets.symmetric(horizontal: 30.0),
                   child: Column(
                     children: [
-                      const SizedBox(height: 40),
-                      // Logo Icon
+                      SizedBox(height: 40),
+                      // Logo Icon with Brand Gradient
                       Center(
                         child: Container(
-                          height: 100,
+                          height: 69,
                           width: 100,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
-                              colors: [Color(0xFF4A90E2), Color(0xFF50E3C2)],
+                              colors: [Color(0xFF008CFF), Color(0xFF18FFFF)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.restaurant_menu,
                             color: Colors.white,
                             size: 50,
@@ -143,8 +141,8 @@ class WelcomePage extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
-                      const Text(
+                      SizedBox(height: 20),
+                      Text(
                         "FoodRoute",
                         style: TextStyle(
                           fontSize: 28,
@@ -152,34 +150,31 @@ class WelcomePage extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      const Text(
+                      Text(
                         "Your nutrition companion",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.white70),
                       ),
 
-                      const SizedBox(height: 40),
-                      const Text(
+                      SizedBox(height: 40),
+                      Text(
                         "Start your 4-day nutrition journey",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 18,
-                          color: Color(0xFF008CFF),
+                          color: Color(0xFF008CFF), // Brand Cyan
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "1 day preparation + 3 days full access\nDiscover over 210 healthy recipes that fit your goals",
+                      SizedBox(height: 8),
+                      Text(
+                        "1 day preparation + 3 days full access\nDiscover over 210 healthy recipes",
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 14, color: Colors.white),
                       ),
 
-                      const SizedBox(height: 30),
+                      SizedBox(height: 30),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        padding: EdgeInsets.symmetric(horizontal: 20.0),
                         child: Column(
                           children: [
                             _buildCheckItem("Over 210 delicious recipes"),
@@ -190,39 +185,31 @@ class WelcomePage extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
-                      Container(
+                      SizedBox(height: 40),
+                      // Action Button
+                      SizedBox(
                         width: double.infinity,
                         height: 55,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF008CFF).withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF008CFF),
+                            backgroundColor: Color(0xFF008CFF),
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 5,
                           ),
                           onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const LoginPage(),
+                                builder: (context) => LoginPage(),
                               ),
                             );
                           },
-                          child: const Text(
+                          child: Text(
                             "Start free trial",
                             style: TextStyle(
-                              color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -230,15 +217,12 @@ class WelcomePage extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 15),
-                      const Text(
+                      SizedBox(height: 15),
+                      Text(
                         "No credit card required • Cancel anytime",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.white60),
                       ),
-                      const SizedBox(height: 30),
+                      SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -252,15 +236,14 @@ class WelcomePage extends StatelessWidget {
 
   Widget _buildCheckItem(String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 11.4),
+      padding: EdgeInsets.symmetric(vertical: 11.4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle, color: Color(0xFF008CFF), size: 22),
-          const SizedBox(width: 15),
+          Icon(Icons.check_circle, color: Color(0xFF008CFF), size: 22),
+          SizedBox(width: 15),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               color: Colors.white,
               fontWeight: FontWeight.w500,

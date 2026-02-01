@@ -14,32 +14,36 @@ class _EditEmailState extends State<EditEmail> {
   final TextEditingController _newEmailController = TextEditingController();
   bool _isObscured = true;
 
+  // Aapke Brand Colors
+  final Color primaryDark = Color(0xFF080C10);
+  final Color accentCyan = Color(0xFF18FFFF);
+
   Future<void> _updateEmail() async {
     String password = _passwordController.text.trim();
     String newEmail = _newEmailController.text.trim();
 
     if (password.isEmpty || newEmail.isEmpty) {
-      _showSnackBar("Please fill both fields", Colors.red);
+      _showSnackBar("Please fill both fields", Colors.redAccent);
       return;
     }
 
-    if (!newEmail.contains("@")) {
-      _showSnackBar("Please enter a valid email", Colors.red);
+    if (!RegExp(r"^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$").hasMatch(newEmail)) {
+      _showSnackBar("Please enter a valid email", Colors.redAccent);
       return;
     }
 
-    // Loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) =>
+          Center(child: CircularProgressIndicator(color: accentCyan)),
     );
 
     try {
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user != null) {
-        // 1. Re-authenticate (Pehle verify karna ke user sahi hai)
+        // 1. Re-authenticate
         AuthCredential credential = EmailAuthProvider.credential(
           email: user.email!,
           password: password,
@@ -47,23 +51,21 @@ class _EditEmailState extends State<EditEmail> {
 
         await user.reauthenticateWithCredential(credential);
 
-        // 2. Update Email using the latest Firebase method
-        // Ye naye email par confirmation link bhejega
+        // 2. Verify Before Update
         await user.verifyBeforeUpdateEmail(newEmail);
 
-        // 3. Local memory mein bhi update save kar dein
+        // 3. Local memory update
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('email', newEmail);
 
         if (!mounted) return;
-        Navigator.pop(context); // Close loading
+        Navigator.pop(context);
 
         _showSnackBar(
-          "Verification link sent! Please verify $newEmail to complete update.",
-          Colors.orange,
+          "Verification link sent! Check $newEmail to finish.",
+          accentCyan,
         );
 
-        // Fields clear kar dein
         _passwordController.clear();
         _newEmailController.clear();
       }
@@ -71,29 +73,29 @@ class _EditEmailState extends State<EditEmail> {
       if (!mounted) return;
       Navigator.pop(context);
 
-      String errorMsg = "Update failed";
-      if (e.code == 'wrong-password') {
-        errorMsg = "Incorrect password!";
-      } else if (e.code == 'email-already-in-use') {
-        errorMsg = "This email is already in use.";
-      } else if (e.code == 'invalid-email') {
-        errorMsg = "The email address is badly formatted.";
-      } else {
-        errorMsg = e.message ?? "An error occurred";
-      }
+      String errorMsg = e.code == 'wrong-password'
+          ? "Incorrect password!"
+          : e.code == 'email-already-in-use'
+          ? "Email already registered."
+          : e.message ?? "Update failed";
 
-      _showSnackBar(errorMsg, Colors.red);
+      _showSnackBar(errorMsg, Colors.redAccent);
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
-      _showSnackBar("Error: ${e.toString()}", Colors.red);
+      _showSnackBar("Something went wrong", Colors.redAccent);
     }
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle(color: Colors.white)),
+        backgroundColor: color == accentCyan ? Color(0xFF008CFF) : color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -105,80 +107,86 @@ class _EditEmailState extends State<EditEmail> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? primaryDark : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF080C10)),
-        title: const Text(
+        iconTheme: IconThemeData(color: isDark ? Colors.white : primaryDark),
+        title: Text(
           "Edit Email",
           style: TextStyle(
-            color: Color(0xFF080C10),
+            color: isDark ? Colors.white : primaryDark,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Update Your Email",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              "Update Email Address",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : primaryDark,
+              ),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              "First enter current password",
-              style: TextStyle(color: Colors.grey),
+            SizedBox(height: 8),
+            Text(
+              "We will send a verification link to your new email.",
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 32),
 
-            // --- Current Password Field ---
             _buildTextField(
               label: "Current Password",
               controller: _passwordController,
               isObscured: _isObscured,
+              isDark: isDark,
               suffix: IconButton(
                 icon: Icon(
-                  _isObscured ? Icons.visibility_off : Icons.visibility,
+                  _isObscured
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: Colors.grey,
+                  size: 20,
                 ),
                 onPressed: () => setState(() => _isObscured = !_isObscured),
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
-            // --- New Email Field ---
             _buildTextField(
               label: "New Email Address",
               controller: _newEmailController,
               isObscured: false,
+              isDark: isDark,
             ),
 
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
 
-            // --- Update Button ---
             SizedBox(
               width: double.infinity,
-              height: 55,
+              height: 56,
               child: ElevatedButton(
                 onPressed: _updateEmail,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF008CFF),
+                  backgroundColor: Color(0xFF008CFF),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   "Verify & Update",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
             ),
@@ -192,27 +200,50 @@ class _EditEmailState extends State<EditEmail> {
     required String label,
     required TextEditingController controller,
     required bool isObscured,
+    required bool isDark,
     Widget? suffix,
   }) {
-    return TextField(
-      controller: controller,
-      obscureText: isObscured,
-      style: const TextStyle(color: Colors.black),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.grey),
-        filled: true,
-        fillColor: const Color(0xFFF4F7F9),
-        suffixIcon: suffix,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.transparent),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            // ignore: deprecated_member_use
+            color: isDark ? Colors.white70 : primaryDark.withOpacity(0.7),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF18FFFF), width: 1.5),
+        SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          obscureText: isObscured,
+          style: TextStyle(color: isDark ? Colors.white : primaryDark),
+          decoration: InputDecoration(
+            hintText: "Enter $label",
+            hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+            filled: true,
+            fillColor: isDark
+                // ignore: deprecated_member_use
+                ? Colors.white.withOpacity(0.05)
+                : Color(0xFFF4F7F9),
+            suffixIcon: suffix,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.transparent),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                // ignore: deprecated_member_use
+                color: accentCyan.withOpacity(0.5),
+                width: 1.5,
+              ),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }

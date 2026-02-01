@@ -1,169 +1,224 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_foodroute/add_to_shopping_card_screen.dart';
+import 'package:flutter_foodroute/all_meals.dart'; // Recipe model ke liye
 
-class Recipe {
-  final String title;
-  final String image;
-  final String calories;
-  bool isFavorite; // Ye toggle hoga
+class RecipeDetailScreen extends StatefulWidget {
+  final Recipe recipe; // Pura object pass kar rahe hain
 
-  Recipe({
-    required this.title,
-    required this.image,
-    required this.calories,
-    this.isFavorite = false,
-  });
+  const RecipeDetailScreen({super.key, required this.recipe});
+
+  @override
+  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
-class RecipeDetailScreen extends StatelessWidget {
-  final String title;
-  final String imagePath;
-
-  const RecipeDetailScreen({
-    super.key,
-    required this.title,
-    required this.imagePath,
-  });
+class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  // Brand Colors
+  final Color primaryDark = Color(0xFF080C10);
+  final Color accentCyan = Color(0xFF008CFF);
+  final Color cardBg = Color(0xFFF4F7F9);
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      // --- APPBAR ADDED HERE ---
+      backgroundColor: isDark ? primaryDark : Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color.from(alpha: 1, red: 1, green: 1, blue: 1),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(8.0),
           child: CircleAvatar(
-            backgroundColor: Colors.grey.shade100,
+            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade100,
             child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
+              icon: Icon(
+                Icons.arrow_back,
+                color: isDark ? Colors.white : Colors.black,
+                size: 20,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ),
         ),
         title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.black,
+          "Recipe Details",
+          style: TextStyle(
+            color: isDark ? Colors.white : primaryDark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: CircleAvatar(
+              backgroundColor: isDark ? Colors.white10 : Colors.grey.shade100,
+              child: IconButton(
+                icon: Icon(
+                  widget.recipe.isFavorite
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  // Favorite hai to Red, warna theme ke hisab se black/white
+                  color: widget.recipe.isFavorite
+                      ? Colors.red
+                      : (isDark ? Colors.white : Colors.black),
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    // Direct main list ka data change ho raha hai
+                    widget.recipe.isFavorite = !widget.recipe.isFavorite;
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Image (Ab Stack ki zaroorat nahi kyunki back button AppBar mein hai)
-            Image.network(
-              imagePath,
+            // Image Section
+            Container(
+              height: 280,
               width: double.infinity,
-              height: 250, // Thodi height kam ki hai taake content zyada dikhe
-              fit: BoxFit.cover,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(32),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(32),
+                ),
+                child: Image.network(widget.recipe.image, fit: BoxFit.cover),
+              ),
             ),
 
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 24,
+                    widget.recipe.title,
+                    style: TextStyle(
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : primaryDark,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "A high-protein, nutritious salad – perfect for lunch or dinner.",
-                    style: TextStyle(color: Colors.grey),
+                  SizedBox(height: 8),
+                  Text(
+                    "A high-protein, nutritious meal prepared with fresh ingredients.",
+                    style: TextStyle(
+                      color: isDark ? Colors.white60 : Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
                   ),
 
-                  const SizedBox(height: 20),
-                  // Stats Row (Time, Calories, Protein)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildInfoItem(Icons.access_time, "15 min", Colors.blue),
-                      _buildInfoItem(
-                        Icons.local_fire_department,
-                        "450 kcal",
-                        Colors.orange,
-                      ),
-                      _buildInfoItem(Icons.egg, "38g Protein", Colors.green),
-                    ],
+                  SizedBox(height: 24),
+
+                  // Stats Row
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : cardBg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildInfoItem(
+                          Icons.access_time_rounded,
+                          "15 min",
+                          Colors.blue,
+                          isDark,
+                        ),
+                        _buildInfoItem(
+                          Icons.local_fire_department_rounded,
+                          "${widget.recipe.calories} kcal",
+                          Colors.orange,
+                          isDark,
+                        ),
+                        _buildInfoItem(
+                          Icons.fitness_center_rounded,
+                          "38g Protein",
+                          Colors.green,
+                          isDark,
+                        ),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 30),
-                  const Text(
-                    "Ingredients",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  SizedBox(height: 32),
+                  _buildSectionTitle("Ingredients", isDark),
+                  SizedBox(height: 16),
+                  _buildIngredient(
+                    "2 Chicken breast fillets (grilled)",
+                    isDark,
                   ),
-                  const SizedBox(height: 15),
-                  _buildIngredient("2 Chicken breast fillets (grilled)"),
-                  _buildIngredient("4 Cups mixed green salad"),
-                  _buildIngredient("1 Cup cherry tomatoes"),
-                  _buildIngredient("1 Cucumber, sliced"),
-                  _buildIngredient("1/4 Red onion, thinly sliced"),
+                  _buildIngredient("4 Cups mixed green salad", isDark),
+                  _buildIngredient("1 Cup cherry tomatoes", isDark),
+                  _buildIngredient("1 Cucumber, sliced", isDark),
 
-                  const SizedBox(height: 30),
-                  const Text(
-                    "Instructions",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 15),
+                  SizedBox(height: 32),
+                  _buildSectionTitle("Cooking Steps", isDark),
+                  SizedBox(height: 16),
                   _buildStep(
                     1,
-                    "Season chicken breast fillets with salt, pepper, and your favorite herbs. Grill for 6-7 minutes per side until fully cooked.",
+                    "Season chicken with salt, pepper, and herbs. Grill until golden brown.",
+                    isDark,
                   ),
                   _buildStep(
                     2,
-                    "While the chicken is grilling, wash and prepare the vegetables. Halve the cherry tomatoes, slice the cucumber, and thinly slice the red onion.",
+                    "Wash and chop all fresh vegetables into bite-sized pieces.",
+                    isDark,
                   ),
                   _buildStep(
                     3,
-                    "In a large bowl, toss together the mixed greens, cherry tomatoes, cucumber, and red onion.",
+                    "Toss everything in a large bowl and add your favorite dressing.",
+                    isDark,
                   ),
+                  SizedBox(height: 100),
                 ],
               ),
             ),
           ],
         ),
       ),
-      // Orange Bottom Button
-      // Orange Bottom Button (Updated to navigate)
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            top: 10,
-          ),
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? primaryDark : Colors.white,
+          boxShadow: [
+            BoxShadow(
+              // ignore: deprecated_member_use
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
           child: ElevatedButton.icon(
             onPressed: () {
-              // NAVIGATION LOGIC START
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const ShoppingListScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => ShoppingListScreen()),
               );
-              // NAVIGATION LOGIC END
             },
-            icon: const Icon(Icons.shopping_cart),
-            label: const Text("Add to Shopping List"),
+            icon: Icon(Icons.shopping_bag_outlined),
+            label: Text("Add to Shopping List"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2196F3),
+              backgroundColor: Color(0xFF008CFF),
               foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 55),
-              elevation: 5,
+              minimumSize: Size(double.infinity, 60),
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(18),
               ),
             ),
           ),
@@ -172,56 +227,83 @@ class RecipeDetailScreen extends StatelessWidget {
     );
   }
 
-  // Helpers for Detail Screen
-  Widget _buildInfoItem(IconData icon, String label, Color color) {
-    return Row(
+  // --- Helpers ---
+  Widget _buildSectionTitle(String title, bool isDark) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: isDark ? Colors.white : primaryDark,
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String label, Color color, bool isDark) {
+    return Column(
       children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 5),
+        Icon(icon, color: color, size: 24),
+        SizedBox(height: 6),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : primaryDark,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildIngredient(String name) {
+  Widget _buildIngredient(String name, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(5),
+          Icon(Icons.check_circle_outline, color: accentCyan, size: 20),
+          SizedBox(width: 12),
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 15,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
-          const SizedBox(width: 10),
-          Text(name),
         ],
       ),
     );
   }
 
-  Widget _buildStep(int num, String text) {
+  Widget _buildStep(int num, String text, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: EdgeInsets.only(bottom: 24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 12,
-            backgroundColor: const Color(0xFF2196F3),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              // ignore: deprecated_member_use
+              color: accentCyan.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Text(
               "$num",
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+              style: TextStyle(color: accentCyan, fontWeight: FontWeight.bold),
             ),
           ),
-          const SizedBox(width: 15),
-          Expanded(child: Text(text)),
+          SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ),
         ],
       ),
     );

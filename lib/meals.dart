@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foodroute/all_meals.dart';
+import 'package:flutter_foodroute/recipe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_foodroute/favorites.dart';
-import 'package:flutter_foodroute/recipe.dart' hide Recipe;
 import 'package:flutter_foodroute/search.dart';
 import 'package:flutter_foodroute/setting_and_profile.dart';
 import 'progress.dart';
@@ -18,19 +18,14 @@ class Meals extends StatefulWidget {
 class _MealsState extends State<Meals> {
   int _currentIndex = 0;
 
-  // Global variables for tracking
   double currentCalories = 0;
   double currentProtein = 0;
   double currentCarbs = 0;
   double currentFat = 0;
 
-  // Targets
-  final double targetCalories = 2000;
-  final double targetProtein = 65;
-  final double targetCarbs = 200;
-  final double targetFat = 50;
+  final Color primaryDark = Color(0xFF080C10);
+  final Color accentCyan = Color(0xFF008CFF);
 
-  // Function to update nutrition data from child
   void _updateNutrition(double cal, double pro, double carb, double fat) {
     setState(() {
       currentCalories += cal;
@@ -40,9 +35,36 @@ class _MealsState extends State<Meals> {
     });
   }
 
+  // --- Exit Confirmation Dialog ---
+  Future<bool> _showExitDialog(BuildContext context) async {
+    return await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Color(0xFF1A1F24),
+            title: Text("Exit App", style: TextStyle(color: Colors.white)),
+            content: Text(
+              "Do you want to close the app?",
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text("No", style: TextStyle(color: Colors.grey)),
+              ),
+              TextButton(
+                onPressed: () => SystemNavigator.pop(), // App close kar dega
+                child: Text("Yes", style: TextStyle(color: Color(0xFF008CFF))),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Screens list (Passing data and callback to MealsContent)
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     final List<Widget> screens = [
       MealsContent(
         calories: currentCalories,
@@ -57,57 +79,69 @@ class _MealsState extends State<Meals> {
         carbs: currentCarbs,
         fat: currentFat,
       ),
-      const SearchScreen(),
-      const FavoritesScreen(),
-      const Progress(),
+      SearchScreen(),
+      FavoritesScreen(),
     ];
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        body: screens[_currentIndex],
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: Colors.grey.shade100, width: 1),
+    // 🔥 PopScope lagaya hai taaki back karne par Login screen na aaye
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _showExitDialog(context);
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          systemNavigationBarColor: isDark ? primaryDark : Colors.white,
+          systemNavigationBarIconBrightness: isDark
+              ? Brightness.light
+              : Brightness.dark,
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
+        child: Scaffold(
+          body: IndexedStack(index: _currentIndex, children: screens),
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: isDark ? Colors.white10 : Colors.grey.shade100,
+                  width: 1,
+                ),
+              ),
             ),
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: const Color(0xFF008CFF),
-            unselectedItemColor: Colors.grey,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) => setState(() => _currentIndex = index),
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: isDark ? primaryDark : Colors.white,
+              selectedItemColor: accentCyan,
+              unselectedItemColor: Colors.grey,
+              selectedLabelStyle: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: TextStyle(fontSize: 12),
+              elevation: 0,
+              items: [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.restaurant_menu),
+                  label: "Meals",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.auto_graph),
+                  label: "Progress",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.search),
+                  label: "Search",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.favorite),
+                  label: "Favorites",
+                ),
+              ],
             ),
-            unselectedLabelStyle: const TextStyle(fontSize: 12),
-            elevation: 0,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.restaurant_menu),
-                label: "Meals",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.auto_graph),
-                label: "Progress",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.search),
-                label: "Search",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.favorite),
-                label: "Favorites",
-              ),
-            ],
           ),
         ),
       ),
@@ -136,39 +170,38 @@ class MealsContent extends StatefulWidget {
 }
 
 class _MealsContentState extends State<MealsContent> {
-  String username = ""; // Variable to store name
+  String username = "";
+  final Color primaryDark = Color(0xFF080C10);
+  final Color accentCyan = Color(0xFF008CFF);
 
   @override
   void initState() {
     super.initState();
-    _loadUsername(); // Screen load hote hi naam uthao
+    _loadUsername();
   }
 
-  // Memory se username nikalne ka function
   void _loadUsername() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      // Agar 'username' nahi mila toh "User" dikhayega
       username = prefs.getString('username') ?? "User";
     });
   }
 
-  // Controllers to capture user input
   final TextEditingController calController = TextEditingController();
   final TextEditingController proteinController = TextEditingController();
   final TextEditingController carbController = TextEditingController();
   final TextEditingController fatController = TextEditingController();
 
-  void _showAddMealPopup(BuildContext context) {
+  void _showAddMealPopup(BuildContext context, bool isDark) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 25),
+        insetPadding: EdgeInsets.symmetric(horizontal: 25),
         child: Container(
-          padding: const EdgeInsets.all(25),
+          padding: EdgeInsets.all(25),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? Color(0xFF1A1F24) : Colors.white,
             borderRadius: BorderRadius.circular(30),
           ),
           child: SingleChildScrollView(
@@ -179,7 +212,7 @@ class _MealsContentState extends State<MealsContent> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -187,6 +220,7 @@ class _MealsContentState extends State<MealsContent> {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : primaryDark,
                           ),
                         ),
                         Text(
@@ -197,91 +231,88 @@ class _MealsContentState extends State<MealsContent> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
+                      icon: Icon(
+                        Icons.close,
+                        color: isDark ? Colors.white : primaryDark,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 25),
-                const Text(
-                  "Calories",
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 10),
-                _buildPopupField("e.g. 450", calController),
-                const SizedBox(height: 20),
+                SizedBox(height: 25),
+                _buildPopupField("Calories", "e.g. 450", calController, isDark),
+                SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child: _buildMacroInput(
-                        "Protein (g)",
+                        "Protein",
                         "28",
                         proteinController,
+                        isDark,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: _buildMacroInput(
-                        "Carbs (g)",
+                        "Carbs",
                         "45",
                         carbController,
+                        isDark,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
-                      child: _buildMacroInput("Fat (g)", "12", fatController),
+                      child: _buildMacroInput(
+                        "Fat",
+                        "12",
+                        fatController,
+                        isDark,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 30),
+                SizedBox(height: 30),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
+                      child: TextButton(
                         onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade100,
-                          foregroundColor: Colors.black54,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
+                        child: Text(
+                          "Cancel",
+                          style: TextStyle(color: Colors.grey),
                         ),
-                        child: const Text("Cancel"),
                       ),
                     ),
-                    const SizedBox(width: 15),
+                    SizedBox(width: 15),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          // Convert text to double and send back
                           double c = double.tryParse(calController.text) ?? 0;
                           double p =
                               double.tryParse(proteinController.text) ?? 0;
                           double carb =
                               double.tryParse(carbController.text) ?? 0;
                           double f = double.tryParse(fatController.text) ?? 0;
-
                           widget.onMealAdded(c, p, carb, f);
-
-                          // Clear controllers
                           calController.clear();
                           proteinController.clear();
                           carbController.clear();
                           fatController.clear();
-
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF008CFF),
+                          backgroundColor: accentCyan,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                         ),
-                        child: const Text("Save Meal"),
+                        child: Text(
+                          "Save Meal",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ],
@@ -294,23 +325,42 @@ class _MealsContentState extends State<MealsContent> {
     );
   }
 
-  Widget _buildPopupField(String hint, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: const Color(0xFFF8F8F8),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 15,
+  Widget _buildPopupField(
+    String label,
+    String hint,
+    TextEditingController controller,
+    bool isDark,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white70 : primaryDark,
+          ),
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide.none,
+        SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: TextStyle(color: isDark ? Colors.white : primaryDark),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: isDark
+                // ignore: deprecated_member_use
+                ? Colors.white.withOpacity(0.05)
+                : Color(0xFFF8F8F8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -318,43 +368,64 @@ class _MealsContentState extends State<MealsContent> {
     String label,
     String hint,
     TextEditingController controller,
+    bool isDark,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white70 : primaryDark,
+          ),
         ),
-        const SizedBox(height: 8),
-        _buildPopupField(hint, controller),
+        SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: TextStyle(color: isDark ? Colors.white : primaryDark),
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: isDark
+                // ignore: deprecated_member_use
+                ? Colors.white.withOpacity(0.05)
+                : Color(0xFFF8F8F8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
     List<Recipe> featuredRecipes = allRecipes.take(4).toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? primaryDark : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        // 'const' yahan se hata diya hai taake variable use ho sake
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Good Morning, $username", // Ab yahan dynamic name aayega
-              style: const TextStyle(
-                color: Color(0xFF080C10), // Aapka brand dark color
+              "Good Morning, $username",
+              style: TextStyle(
+                color: isDark ? Colors.white : primaryDark,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const Text(
+            Text(
               "Friday, Jan 2, 2026",
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
@@ -362,132 +433,129 @@ class _MealsContentState extends State<MealsContent> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: EdgeInsets.only(right: 16),
             child: InkWell(
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                MaterialPageRoute(builder: (context) => SettingsScreen()),
               ),
-              child: const CircleAvatar(
-                backgroundColor: Color(0xFF008CFF), // Aapka brand cyan color
-                child: Icon(Icons.person, color: Color(0xFF080C10)),
+              child: CircleAvatar(
+                // ignore: deprecated_member_use
+                backgroundColor: accentCyan.withOpacity(0.2),
+                child: Icon(Icons.person, color: accentCyan),
               ),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Today's Meals",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildMealCard(context),
-            const SizedBox(height: 12),
-            _buildAddMealButton(context),
-            const SizedBox(height: 25),
-            const Text(
-              "Macro Overview",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildMacroCard(),
-            const SizedBox(height: 30),
-            _buildFavoritesHeader(context),
-            const SizedBox(height: 16),
-            _buildRecipeGrid(context, featuredRecipes),
-            const SizedBox(height: 40),
+            _sectionTitle("Today's Meals", isDark),
+            SizedBox(height: 16),
+            _buildMealCard(context, isDark),
+            SizedBox(height: 12),
+            _buildAddMealButton(context, isDark),
+            SizedBox(height: 25),
+            _sectionTitle("Macro Overview", isDark),
+            SizedBox(height: 16),
+            _buildMacroCard(isDark),
+            SizedBox(height: 30),
+            _buildFavoritesHeader(context, isDark),
+            SizedBox(height: 16),
+            _buildRecipeGrid(context, featuredRecipes, isDark),
+            SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMealCard(BuildContext context) {
-    return InkWell(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const RecipeDetailScreen(
-            title: "Omelette Sandwich",
-            imagePath:
-                'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200',
+  Widget _sectionTitle(String title, bool isDark) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: isDark ? Colors.white : primaryDark,
+      ),
+    );
+  }
+
+  Widget _buildMealCard(BuildContext context, bool isDark) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Color(0xFF1A1F24) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey.shade100,
+        ),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200',
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-      ),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade100),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200',
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-              ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "08:00 AM • Breakfast",
+                  style: TextStyle(color: Colors.grey, fontSize: 11),
+                ),
+                Text(
+                  "Omelette Sandwich",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: isDark ? Colors.white : primaryDark,
+                  ),
+                ),
+                Text(
+                  "320 kcal",
+                  style: TextStyle(
+                    color: accentCyan,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "08:00 AM • Breakfast",
-                    style: TextStyle(color: Colors.grey, fontSize: 11),
-                  ),
-                  Text(
-                    "Omelette Sandwich",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  Text(
-                    "320 kcal",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildAddMealButton(BuildContext context) {
+  Widget _buildAddMealButton(BuildContext context, bool isDark) {
     return InkWell(
-      onTap: () => _showAddMealPopup(context),
+      onTap: () => _showAddMealPopup(context, isDark),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         height: 55,
         decoration: BoxDecoration(
-          color: const Color(0xFF2196F3).withOpacity(0.05),
+          // ignore: deprecated_member_use
+          color: accentCyan.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, color: Color(0xFF008CFF)),
+            Icon(Icons.add_rounded, color: accentCyan),
             Text(
               " Add meal",
-              style: TextStyle(
-                color: Color(0xFF008CFF),
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: accentCyan, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -495,13 +563,15 @@ class _MealsContentState extends State<MealsContent> {
     );
   }
 
-  Widget _buildMacroCard() {
+  Widget _buildMacroCard(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Color(0xFF1A1F24) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey.shade100,
+        ),
       ),
       child: Column(
         children: [
@@ -510,54 +580,59 @@ class _MealsContentState extends State<MealsContent> {
             "${widget.calories.toInt()}/2000",
             widget.calories / 2000,
             Colors.green,
+            isDark,
           ),
           _macroRow(
             "Protein",
             "${widget.protein.toInt()}/65g",
             widget.protein / 65,
-            Colors.blue,
+            accentCyan,
+            isDark,
           ),
           _macroRow(
             "Carbs",
             "${widget.carbs.toInt()}/200g",
             widget.carbs / 200,
             Colors.orange,
+            isDark,
           ),
           _macroRow(
             "Fat",
             "${widget.fat.toInt()}/50g",
             widget.fat / 50,
             Colors.redAccent,
+            isDark,
           ),
         ],
       ),
     );
   }
 
-  Widget _macroRow(String l, String v, double p, Color c) {
+  Widget _macroRow(String l, String v, double p, Color c, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(l, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(l, style: TextStyle(fontSize: 12, color: Colors.grey)),
               Text(
                 v,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : primaryDark,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: p > 1.0 ? 1.0 : p, // Progress bar max 1.0 tak hi jaye
-              backgroundColor: Colors.grey.shade100,
+              value: p.clamp(0.0, 1.0),
+              backgroundColor: isDark ? Colors.white12 : Colors.grey.shade100,
               color: c,
               minHeight: 6,
             ),
@@ -567,67 +642,75 @@ class _MealsContentState extends State<MealsContent> {
     );
   }
 
-  Widget _buildFavoritesHeader(BuildContext context) {
+  Widget _buildFavoritesHeader(BuildContext context, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          "Favorite Recipes",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        _sectionTitle("Favorite Recipes", isDark),
         TextButton(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AllMealsScreen()),
-          ),
-          child: const Text(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AllMealsScreen()),
+            ).then((_) {
+              if (mounted) setState(() {});
+            });
+          },
+          child: Text(
             "See All",
-            style: TextStyle(color: Color(0xFF008CFF)),
+            style: TextStyle(color: accentCyan, fontWeight: FontWeight.bold),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRecipeGrid(BuildContext context, List<Recipe> recipes) {
+  // 1. Apni State class mein sabse upar ye list define karein:
+  Widget _buildRecipeGrid(
+    BuildContext context,
+    List<Recipe> recipes,
+    bool isDark,
+  ) {
     return GridView.builder(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.75,
         crossAxisSpacing: 15,
         mainAxisSpacing: 15,
       ),
       itemCount: recipes.length,
       itemBuilder: (c, i) {
         final recipe = recipes[i];
-        return InkWell(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RecipeDetailScreen(
-                title: recipe.title,
-                imagePath: recipe.image,
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecipeDetailScreen(recipe: recipe),
               ),
-            ),
-          ),
-          borderRadius: BorderRadius.circular(24),
+            ).then((_) {
+              if (mounted) setState(() {}); // Wapis aane par UI refresh karein
+            });
+          },
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? Color(0xFF1A1F24) : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.shade100),
+              border: Border.all(
+                color: isDark ? Colors.white10 : Colors.grey.shade100,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  flex: 3,
                   child: Stack(
                     children: [
                       ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
+                        borderRadius: BorderRadius.vertical(
                           top: Radius.circular(24),
                         ),
                         child: Image.network(
@@ -637,24 +720,31 @@ class _MealsContentState extends State<MealsContent> {
                           height: double.infinity,
                         ),
                       ),
+                      // --- SEARCH SCREEN WALI LOGIC ---
                       Positioned(
-                        top: 12,
-                        right: 12,
+                        top: 10,
+                        right: 10,
                         child: GestureDetector(
-                          onTap: () => setState(
-                            () => recipe.isFavorite = !recipe.isFavorite,
-                          ),
+                          onTap: () {
+                            setState(() {
+                              // Direct model ki property toggle karein
+                              recipe.isFavorite = !recipe.isFavorite;
+                            });
+                          },
                           child: CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.white.withOpacity(0.9),
+                            radius: 15,
+                            backgroundColor: isDark
+                                ? Color.fromARGB(0, 0, 0, 0)
+                                // ignore: deprecated_member_use
+                                : Colors.white.withOpacity(0.9),
                             child: Icon(
                               recipe.isFavorite
                                   ? Icons.favorite
                                   : Icons.favorite_border,
-                              size: 20,
+                              size: 18,
                               color: recipe.isFavorite
                                   ? Colors.red
-                                  : Colors.black87,
+                                  : (isDark ? Colors.white : Colors.black87),
                             ),
                           ),
                         ),
@@ -663,7 +753,7 @@ class _MealsContentState extends State<MealsContent> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(15),
+                  padding: EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -671,16 +761,17 @@ class _MealsContentState extends State<MealsContent> {
                         recipe.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
+                          color: isDark ? Colors.white : Color(0xFF080C10),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 4),
                       Text(
                         "${recipe.calories} kcal",
-                        style: const TextStyle(
-                          color: Color(0xFF008CFF),
+                        style: TextStyle(
+                          color: Color(0xFF008CFF), // Aapka Cyan Accent
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),

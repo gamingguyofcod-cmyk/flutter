@@ -22,17 +22,21 @@ class ShoppingListScreen extends StatefulWidget {
 }
 
 class _ShoppingListScreenState extends State<ShoppingListScreen> {
-  // --- Data List ---
+  // Brand Colors
+  final Color primaryDark = Color(0xFF080C10);
+  final Color accentCyan = Color(0xFF18FFFF);
+  final Color brandBlue = Color(0xFF008CFF);
+
   final List<ShoppingItem> _items = [
     ShoppingItem(
       name: "Mixed green salad",
       quantity: "4 Cups",
-      category: "Fruits & Veggies",
+      category: "Veggies",
     ),
     ShoppingItem(
       name: "Cherry tomatoes",
       quantity: "1 Cup",
-      category: "Fruits & Veggies",
+      category: "Veggies",
     ),
     ShoppingItem(
       name: "Chicken breast",
@@ -45,44 +49,50 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _qtyController = TextEditingController();
 
-  // --- 1. Add Functionality ---
   void _addNewItem() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      builder: (context) => Padding(
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? primaryDark
+              : Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 20,
-          right: 20,
-          top: 20,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          left: 24,
+          right: 24,
+          top: 24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "Add New Item",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(hintText: "Item Name"),
-            ),
-            TextField(
-              controller: _qtyController,
-              decoration: const InputDecoration(
-                hintText: "Quantity (e.g. 2 kg)",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : primaryDark,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
+            _buildDialogField(_nameController, "Item Name (e.g. Milk)"),
+            SizedBox(height: 12),
+            _buildDialogField(_qtyController, "Quantity (e.g. 2 liters)"),
+            SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF008CFF),
-                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: brandBlue,
+                minimumSize: Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               onPressed: () {
                 if (_nameController.text.isNotEmpty) {
@@ -100,13 +110,33 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   Navigator.pop(context);
                 }
               },
-              child: const Text(
+              child: Text(
                 "Add to List",
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const SizedBox(height: 20),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialogField(TextEditingController controller, String hint) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextField(
+      controller: controller,
+      style: TextStyle(color: isDark ? Colors.white : primaryDark),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: isDark ? Colors.white10 : Color(0xFFF4F7F9),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
       ),
     );
@@ -114,117 +144,165 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Separate active and completed items
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
     final activeItems = _items.where((i) => !i.isCompleted).toList();
     final completedItems = _items.where((i) => i.isCompleted).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? primaryDark : Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           "Shopping List",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: isDark ? Colors.white : primaryDark,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => setState(() => _items.clear()), // Clear All
+            icon: Icon(Icons.delete_sweep_outlined, color: Colors.redAccent),
+            onPressed: () => setState(() => _items.clear()),
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         children: [
-          if (activeItems.isEmpty && completedItems.isEmpty)
-            const Center(
+          if (_items.isEmpty)
+            Center(
               child: Padding(
-                padding: EdgeInsets.only(top: 50),
-                child: Text(
-                  "Your list is empty!",
-                  style: TextStyle(color: Colors.grey),
+                padding: EdgeInsets.only(top: 100),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.shopping_basket_outlined,
+                      size: 80,
+                      // ignore: deprecated_member_use
+                      color: Colors.grey.withOpacity(0.3),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      "Your list is empty!",
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  ],
                 ),
               ),
             ),
 
-          ...activeItems.map((item) => _buildDismissibleItem(item)),
+          ...activeItems.map((item) => _buildDismissibleItem(item, isDark)),
 
           if (completedItems.isNotEmpty) ...[
-            const SizedBox(height: 30),
-            const Text(
-              "COMPLETED",
-              style: TextStyle(
-                color: Colors.grey,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
+            SizedBox(height: 32),
+            Row(
+              children: [
+                Text(
+                  "COMPLETED",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    fontSize: 12,
+                  ),
+                ),
+                SizedBox(width: 10),
+                // ignore: deprecated_member_use
+                Expanded(child: Divider(color: Colors.grey.withOpacity(0.2))),
+              ],
             ),
-            const Divider(),
-            ...completedItems.map((item) => _buildDismissibleItem(item)),
+            SizedBox(height: 16),
+            ...completedItems.map(
+              (item) => _buildDismissibleItem(item, isDark),
+            ),
           ],
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF008CFF),
+        backgroundColor: brandBlue,
+        elevation: 4,
         onPressed: _addNewItem,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white, size: 30),
       ),
     );
   }
 
-  // --- 2. Swipe to Delete Wrapper ---
-  Widget _buildDismissibleItem(ShoppingItem item) {
-    return Dismissible(
-      key: Key(item.name + DateTime.now().toString()),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.redAccent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (direction) {
-        setState(() => _items.remove(item));
-      },
-      child: _buildItemCard(item),
-    );
-  }
-
-  // --- 3. Interactive Item Card ---
-  Widget _buildItemCard(ShoppingItem item) {
-    return GestureDetector(
-      onTap: () => setState(() => item.isCompleted = !item.isCompleted),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5),
-          ],
-        ),
-        child: ListTile(
-          leading: Icon(
-            item.isCompleted
-                ? Icons.check_circle
-                : Icons.radio_button_unchecked,
-            color: item.isCompleted ? Colors.green : Colors.blue,
+  Widget _buildDismissibleItem(ShoppingItem item, bool isDark) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: Dismissible(
+        key: ObjectKey(item),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: Colors.redAccent,
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: Text(
-            item.name,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              decoration: item.isCompleted ? TextDecoration.lineThrough : null,
-              color: item.isCompleted ? Colors.grey : Colors.black87,
+          child: Icon(Icons.delete_forever, color: Colors.white),
+        ),
+        onDismissed: (_) => setState(() => _items.remove(item)),
+        child: GestureDetector(
+          onTap: () => setState(() => item.isCompleted = !item.isCompleted),
+          child: Container(
+            decoration: BoxDecoration(
+              // ignore: deprecated_member_use
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                        // ignore: deprecated_member_use
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
             ),
-          ),
-          trailing: Text(
-            item.quantity,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            child: ListTile(
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: item.isCompleted
+                      // ignore: deprecated_member_use
+                      ? Colors.green.withOpacity(0.2)
+                      // ignore: deprecated_member_use
+                      : accentCyan.withOpacity(0.1),
+                ),
+                padding: EdgeInsets.all(8),
+                child: Icon(
+                  item.isCompleted ? Icons.check : Icons.shopping_cart_outlined,
+                  color: item.isCompleted ? Colors.green : brandBlue,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                item.name,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  decoration: item.isCompleted
+                      ? TextDecoration.lineThrough
+                      : null,
+                  color: item.isCompleted
+                      ? Colors.grey
+                      : (isDark ? Colors.white : primaryDark),
+                ),
+              ),
+              trailing: Text(
+                item.quantity,
+                style: TextStyle(
+                  color: brandBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
           ),
         ),
       ),

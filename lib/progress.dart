@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_foodroute/meals.dart';
 
 class Progress extends StatefulWidget {
   final double calories;
@@ -22,10 +23,10 @@ class Progress extends StatefulWidget {
 class _ProgressState extends State<Progress> {
   String selectedPeriod = "Weekly";
 
-  // AAPKE BRAND COLORS
-  final Color darkNavy = const Color(0xFF008CFF);
-  final Color cyanAccent = const Color.fromARGB(255, 255, 255, 255);
-  final Color slateGrey = const Color.fromARGB(255, 78, 77, 77);
+  // BRAND COLORS - Navy Blue Theme
+  final Color blue = Color(0xFF008CFF); // Proper Navy Blue
+  final Color blue2 = Color.fromARGB(200, 5, 112, 219);
+  final Color slateGrey = Color(0xFF4E4D4D);
 
   // Mock Data
   final Map<String, List<double>> barData = {
@@ -35,10 +36,10 @@ class _ProgressState extends State<Progress> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
     bool isDaily = selectedPeriod == "Daily";
 
-    // --- DATA CALCULATION (Plus Logic) ---
-    // Jab Weekly/Monthly ho to base data mein current values plus kar rahe hain
+    // --- DATA CALCULATION ---0xFF008CFF
     List<double> currentMacros = isDaily
         ? [widget.protein, widget.carbs, widget.fat]
         : [40 + widget.protein, 30 + widget.carbs, 30 + widget.fat];
@@ -48,40 +49,50 @@ class _ProgressState extends State<Progress> {
       displayCalories = widget.calories;
     } else {
       List<double> base = List.from(barData[selectedPeriod]!);
-      base[0] =
-          base[0] + widget.calories; // First index pe aaj ka data add kiya
+      base[0] = base[0] + widget.calories;
       displayCalories = base.reduce((a, b) => a + b) / base.length;
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(
-          255,
-          255,
-          255,
-          255,
-        ), // Cyan ki jagah Navy Blue for premium feel
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: isDark ? blue : Colors.black,
+          ),
+          onPressed: () {
+            // Navigator.pop ki jagah direct MealsPage par bhejien
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const Meals(),
+              ), // MealsPage aapki class ka naam hona chahiye
+            );
+          },
+        ),
         title: Text(
           "Progress & Statistics",
           style: TextStyle(
-            color: Color.fromARGB(255, 1, 1, 1),
+            color: isDark ? Colors.white : Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           children: [
-            _buildTimeSelector(),
-            const SizedBox(height: 24),
-            _buildBarChartCard(isDaily, displayCalories),
-            const SizedBox(height: 16),
-            _buildMacroPieCard(currentMacros, displayCalories, isDaily),
-            const SizedBox(height: 16),
+            _buildTimeSelector(isDark),
+            SizedBox(height: 24),
+            _buildBarChartCard(isDaily, displayCalories, isDark),
+            SizedBox(height: 16),
+            _buildMacroPieCard(currentMacros, displayCalories, isDaily, isDark),
+            SizedBox(height: 16),
             _buildAchievementCard(),
           ],
         ),
@@ -89,12 +100,12 @@ class _ProgressState extends State<Progress> {
     );
   }
 
-  // --- TIME SELECTOR (Original UI) ---
-  Widget _buildTimeSelector() {
+  // --- TIME SELECTOR (Navy Blue Theme) ---
+  Widget _buildTimeSelector(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F1F1),
+        color: isDark ? Colors.white10 : Color(0xFFF1F1F1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -104,16 +115,18 @@ class _ProgressState extends State<Progress> {
             child: GestureDetector(
               onTap: () => setState(() => selectedPeriod = label),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isActive ? darkNavy : Colors.transparent,
+                  color: isActive ? blue : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isActive ? cyanAccent : slateGrey,
+                    color: isActive
+                        ? Colors.white
+                        : (isDark ? Colors.white70 : slateGrey),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -125,8 +138,8 @@ class _ProgressState extends State<Progress> {
     );
   }
 
-  // --- BAR CHART CARD (Original UI) ---
-  Widget _buildBarChartCard(bool isDaily, double calories) {
+  // --- BAR CHART CARD ---
+  Widget _buildBarChartCard(bool isDaily, double calories, bool isDark) {
     List<double> currentData;
     if (isDaily) {
       currentData = [calories];
@@ -136,9 +149,9 @@ class _ProgressState extends State<Progress> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Color(0xFF1A1F24) : Colors.white,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -146,9 +159,13 @@ class _ProgressState extends State<Progress> {
         children: [
           Text(
             "$selectedPeriod Calories vs. Goal",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: isDark ? Colors.white : Colors.black,
+            ),
           ),
-          const SizedBox(height: 30),
+          SizedBox(height: 30),
           SizedBox(
             height: 180,
             child: BarChart(
@@ -166,27 +183,32 @@ class _ProgressState extends State<Progress> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (val, meta) {
-                        if (isDaily) return const Text("Today");
+                        TextStyle style = TextStyle(
+                          color: isDark ? Colors.white54 : Colors.grey,
+                          fontSize: 10,
+                        );
+                        if (isDaily) return Text("Today", style: style);
                         if (selectedPeriod == "Monthly") {
-                          return Text("W${val.toInt() + 1}");
+                          return Text("W${val.toInt() + 1}", style: style);
                         }
                         return Text(
                           ['M', 'T', 'W', 'T', 'F', 'S', 'S'][val.toInt() % 7],
+                          style: style,
                         );
                       },
                     ),
                   ),
-                  leftTitles: const AxisTitles(
+                  leftTitles: AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  topTitles: const AxisTitles(
+                  topTitles: AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  rightTitles: const AxisTitles(
+                  rightTitles: AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
-                gridData: const FlGridData(show: false),
+                gridData: FlGridData(show: false),
                 borderData: FlBorderData(show: false),
               ),
             ),
@@ -196,97 +218,156 @@ class _ProgressState extends State<Progress> {
     );
   }
 
-  // --- PIE CHART CARD (Original UI) ---
+  // --- PIE CHART CARD ---
+  // --- PIE CHART CARD (UI Friendly & Synced) ---
   Widget _buildMacroPieCard(
     List<double> currentMacros,
     double totalCalories,
     bool isDaily,
+    bool isDark,
   ) {
+    // Premium UI Colors
+    Color proteinColor = Color(0xFF18FFFF);
+    Color carbsColor = Color(0xFFFFB74D);
+    Color fatColor = Color(0xFF81C784);
+
+    // Check if there's any data to show
+    bool hasData =
+        totalCalories > 0 ||
+        (currentMacros[0] + currentMacros[1] + currentMacros[2]) > 0;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: isDark ? Color(0xFF1A1F24) : Colors.white,
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "$selectedPeriod Macro Split",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            "Macro Distribution",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: isDark ? Colors.white : Color(0xFF080C10),
+            ),
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 0,
-                    sections: [
-                      PieChartSectionData(
-                        color: darkNavy,
-                        value: currentMacros[0],
-                        radius: 70,
-                        title: '',
+          SizedBox(height: 25),
+          if (!hasData)
+            // --- NO DATA FOUND UI ---
+            Center(
+              child: Column(
+                children: [
+                  SizedBox(height: 20),
+                  Icon(
+                    Icons.pie_chart_outline_rounded,
+                    size: 60,
+                    // ignore: deprecated_member_use
+                    color: Colors.grey.withOpacity(0.3),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    "No Data Found",
+                    style: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    "Log some meals to see your progress",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+            )
+          else
+            // --- ACTUAL CHART UI ---
+            Row(
+              children: [
+                SizedBox(
+                  width: 130,
+                  height: 130,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      PieChart(
+                        PieChartData(
+                          sectionsSpace: 4,
+                          centerSpaceRadius: 45,
+                          sections: [
+                            PieChartSectionData(
+                              color: proteinColor,
+                              value: currentMacros[0],
+                              radius: 12,
+                              showTitle: false,
+                            ),
+                            PieChartSectionData(
+                              color: carbsColor,
+                              value: currentMacros[1],
+                              radius: 12,
+                              showTitle: false,
+                            ),
+                            PieChartSectionData(
+                              color: fatColor,
+                              value: currentMacros[2],
+                              radius: 12,
+                              showTitle: false,
+                            ),
+                          ],
+                        ),
                       ),
-                      PieChartSectionData(
-                        color: Color.fromRGBO(1, 1, 1, 1),
-                        value: currentMacros[2],
-                        radius: 70,
-                        title: '',
-                      ),
-                      PieChartSectionData(
-                        color: slateGrey,
-                        value: currentMacros[1],
-                        radius: 70,
-                        title: '',
-                      ),
-                      PieChartSectionData(
-                        color: const Color(0xFFFFB74D),
-                        value: totalCalories,
-                        radius: 70,
-                        title: '',
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "${totalCalories.toInt()}",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          Text(
+                            "kcal",
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  children: [
-                    _macroDetail(
-                      "Calories",
-                      "${totalCalories.toInt()} kcal",
-                      totalCalories / 3000,
-                      const Color(0xFFFFB74D),
-                    ),
-                    _macroDetail(
-                      "Protein",
-                      "${currentMacros[0].toInt()}g",
-                      currentMacros[0] / 150,
-                      darkNavy,
-                    ),
-                    _macroDetail(
-                      "Carbs",
-                      "${currentMacros[1].toInt()}g",
-                      currentMacros[1] / 250,
-                      Colors.grey,
-                    ),
-                    _macroDetail(
-                      "Fat",
-                      "${currentMacros[2].toInt()}g",
-                      currentMacros[2] / 100,
-                      Colors.black,
-                    ),
-                  ],
+                SizedBox(width: 25),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _macroDetail(
+                        "Protein",
+                        "${currentMacros[0].toInt()}g",
+                        currentMacros[0] / 150,
+                        proteinColor,
+                        isDark,
+                      ),
+                      _macroDetail(
+                        "Carbs",
+                        "${currentMacros[1].toInt()}g",
+                        currentMacros[1] / 250,
+                        carbsColor,
+                        isDark,
+                      ),
+                      _macroDetail(
+                        "Fat",
+                        "${currentMacros[2].toInt()}g",
+                        currentMacros[2] / 100,
+                        fatColor,
+                        isDark,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -298,7 +379,7 @@ class _ProgressState extends State<Progress> {
       barRods: [
         BarChartRodData(
           toY: y,
-          color: x == 0 ? darkNavy : (isOver ? slateGrey : darkNavy),
+          color: x == 0 ? blue2 : (isOver ? Colors.redAccent : blue),
           width: 18,
           borderRadius: BorderRadius.circular(4),
         ),
@@ -306,31 +387,35 @@ class _ProgressState extends State<Progress> {
     );
   }
 
-  Widget _macroDetail(String label, String val, double prog, Color col) {
+  Widget _macroDetail(
+    String label,
+    String val,
+    double prog,
+    Color col,
+    bool isDark,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
+              Text(label, style: TextStyle(fontSize: 12, color: Colors.grey)),
               Text(
                 val,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           LinearProgressIndicator(
             value: prog.clamp(0.0, 1.0),
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
             color: col,
             minHeight: 5,
           ),
@@ -341,9 +426,9 @@ class _ProgressState extends State<Progress> {
 
   Widget _buildAchievementCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: darkNavy, // Premium feel ke liye achievement card dark kar diya
+        color: blue2,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -352,14 +437,14 @@ class _ProgressState extends State<Progress> {
             Icons.stars,
             "Calorie Goal Progress",
             "Syncing daily data...",
-            cyanAccent,
+            Colors.orangeAccent,
           ),
-          const Divider(color: Colors.white24),
+          Divider(color: Colors.white24),
           _achievementTile(
             Icons.fitness_center,
             "Protein Target",
             "You're hitting your goals!",
-            Colors.white,
+            Colors.greenAccent,
           ),
         ],
       ),
@@ -374,7 +459,7 @@ class _ProgressState extends State<Progress> {
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -382,7 +467,7 @@ class _ProgressState extends State<Progress> {
       ),
       subtitle: Text(
         sub,
-        style: const TextStyle(fontSize: 12, color: Colors.white70),
+        style: TextStyle(fontSize: 12, color: Colors.white70),
       ),
     );
   }

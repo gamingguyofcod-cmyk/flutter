@@ -1,8 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart'; // Logout aur Current User ke liye
 import 'package:flutter_foodroute/edit_email.dart';
 import 'package:flutter_foodroute/edit_password.dart';
+import 'package:flutter_foodroute/main.dart'; // themeNotifier ke liye
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_foodroute/log_in.dart'; // Ensure this path is correct
+import 'package:flutter_foodroute/log_in.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,96 +14,104 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Initial values jab tak memory se data load na ho jaye
   String username = "Loading...";
-  String email = "User@email.com";
+  String email = "Loading...";
 
   @override
   void initState() {
     super.initState();
-    _loadUserData(); // Screen load hote hi data fetch karega
+    _loadUserData();
   }
 
-  // SharedPreferences se username aur email nikalne ka function
+  // --- LOGIC: AB YE SAHI EMAIL UTHAYEGA ---
   void _loadUserData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Firebase se current user lo taaki real email mil sakay
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+
     setState(() {
-      // Agar memory mein data nahi milta to default fallback values
       username = prefs.getString('username') ?? "Guest User";
-      email = prefs.getString('email') ?? "saad.jawed@email.com";
+
+      // Pehle Firebase check karo, agar wahan nahi to SharedPreferences
+      email =
+          currentUser?.email ?? prefs.getString('email') ?? "No Email Found";
     });
+  }
+
+  // --- LOGOUT LOGIC ---
+  Future<void> _handleLogout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (route) => false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back,
-            color: Color(0xFF080C10),
-          ), // Brand Dark
+            color: isDark ? Colors.white : Color(0xFF080C10),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           "Settings & Profile",
           style: TextStyle(
-            color: Color(0xFF080C10),
+            color: isDark ? Colors.white : Color(0xFF080C10),
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Profile Card (Aapka existing method)
-              _buildProfileCard(),
-              const SizedBox(height: 25),
+              // 1. Profile Card
+              _buildProfileCard(isDark),
+              SizedBox(height: 25),
 
               // 2. Account Section
-              _buildSectionHeader("Account"),
+              _buildSectionHeader("Account", isDark),
               _buildSettingsCard([
                 _buildListTile(
                   Icons.email_outlined,
                   "Email Address",
-                  email, // Aapka dynamic email variable
-                  const Color(0xFF18FFFF), // Aapka Brand Cyan Color
-                  onTap: () {
-                    // EditEmail screen par navigate karne ke liye
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditEmail(),
-                      ),
-                    );
-                  },
+                  email, // <--- Corrected Email
+                  Color(0xFF18FFFF),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EditEmail()),
+                  ),
                 ),
-                // PASSWORD TILE: Navigation set kar di hai
                 _buildListTile(
                   Icons.lock_outline,
                   "Password",
                   "Change password",
                   Colors.green,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfile(),
-                      ),
-                    );
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EditProfile()),
+                  ),
                 ),
-              ]),
-              const SizedBox(height: 25),
+              ], isDark),
+              SizedBox(height: 25),
 
               // 3. Subscription Section
-              _buildSectionHeader("Subscription"),
+              _buildSectionHeader("Subscription", isDark),
               _buildSettingsCard([
                 _buildListTile(
                   Icons.workspace_premium_outlined,
@@ -109,49 +119,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   "Active – 6-Month Plan",
                   Colors.orange,
                 ),
-              ]),
+              ], isDark),
 
-              const SizedBox(height: 25),
+              SizedBox(height: 25),
 
               // 4. Preferences Section
-              _buildSectionHeader("Preferences"),
+              _buildSectionHeader("Preferences", isDark),
               _buildSettingsCard([
                 _buildSwitchTile(
                   Icons.dark_mode_outlined,
                   "Dark Mode",
                   "Enable dark theme",
-                  false,
-                  const Color(0xFF3F51B5),
+                  themeNotifier.value == ThemeMode.dark,
+                  Color(0xFF3F51B5),
+                  (bool val) {
+                    setState(() {
+                      themeNotifier.value = val
+                          ? ThemeMode.dark
+                          : ThemeMode.light;
+                    });
+                  },
                 ),
-                const Divider(height: 1),
+                Divider(height: 1),
                 _buildSwitchTile(
                   Icons.notifications_none_outlined,
                   "Notifications",
                   "Meal reminders & tips",
                   true,
-                  const Color(0xFF3F51B5),
+                  Color(0xFF3F51B5),
+                  (bool val) {
+                    // Handle notifications
+                  },
                 ),
-              ]),
+              ], isDark),
 
-              const SizedBox(height: 30),
+              SizedBox(height: 30),
 
               // 5. Logout Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
+                padding: EdgeInsets.symmetric(horizontal: 5),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                        (route) => false,
-                      );
-                    },
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    label: const Text(
+                    onPressed: _handleLogout,
+                    icon: Icon(Icons.logout, color: Colors.white),
+                    label: Text(
                       "Log Out",
                       style: TextStyle(
                         color: Colors.white,
@@ -160,9 +172,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF008CFF),
-                      padding: const EdgeInsets.symmetric(vertical: 17),
-                      elevation: 0,
+                      backgroundColor: Color(0xFF008CFF),
+                      padding: EdgeInsets.symmetric(vertical: 17),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -170,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 50), // Extra space at bottom
+              SizedBox(height: 50),
             ],
           ),
         ),
@@ -178,36 +189,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // --- Helper Widgets ---
+  // --- Helper Widgets (Exact Same UI as you provided) ---
 
-  Widget _buildSectionHeader(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 5, bottom: 10),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1D2A3A),
-          ),
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: EdgeInsets.only(left: 5, bottom: 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: isDark ? Colors.white70 : Color(0xFF1D2A3A),
         ),
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildProfileCard(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Color(0xFF1A1F24) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            // ignore: deprecated_member_use
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
-            offset: const Offset(0, 5),
+            offset: Offset(0, 5),
           ),
         ],
       ),
@@ -217,36 +226,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               CircleAvatar(
                 radius: 35,
-                backgroundColor: const Color(0xFF3F51B5), // Your Cyan Color
+                backgroundColor: Color(0xFF18FFFF),
                 child: Text(
                   username.isNotEmpty ? username[0].toUpperCase() : "U",
-                  style: const TextStyle(
-                    color: Color.fromARGB(
-                      255,
-                      255,
-                      255,
-                      255,
-                    ), // Your Dark Color
+                  style: TextStyle(
+                    color: Color(0xFF080C10),
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      username, // Variable name
-                      style: const TextStyle(
+                      username,
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     Text(
-                      email, // Variable email
-                      style: const TextStyle(color: Colors.grey),
+                      email, // <--- Corrected Email
+                      style: TextStyle(color: Colors.grey),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -254,22 +259,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                // Semicolon yahan zaroori hai
-              }, // Bracket sahi band hona chahiye
+              onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF4F7F9),
+                backgroundColor: isDark ? Colors.white10 : Color(0xFFF4F7F9),
                 elevation: 0,
-                foregroundColor: Colors.black,
+                foregroundColor: isDark ? Colors.white : Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text("Edit Profile"),
+              child: Text("Edit Profile Info"),
             ),
           ),
         ],
@@ -277,10 +280,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(List<Widget> children, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Color(0xFF1A1F24) : Colors.white,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(children: children),
@@ -295,25 +298,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
   }) {
     return ListTile(
-      onTap: onTap, // Ab ye error nahi dega
+      onTap: onTap,
       leading: CircleAvatar(
+        // ignore: deprecated_member_use
         backgroundColor: iconColor.withOpacity(0.1),
         child: Icon(icon, color: iconColor),
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: Colors.grey, fontSize: 13),
+        style: TextStyle(color: Colors.grey, fontSize: 13),
       ),
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
-        size: 16,
-        color: Colors.grey,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
     );
   }
 
@@ -323,11 +323,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String subtitle,
     bool val,
     Color iconColor,
+    Function(bool) onChanged,
   ) {
     return ListTile(
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
+          // ignore: deprecated_member_use
           color: iconColor.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
@@ -335,13 +337,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 12, color: Colors.grey),
+      ),
       trailing: Switch(
         value: val,
-        activeThumbColor: const Color(0xFF3F51B5),
-        onChanged: (value) {},
+        activeThumbColor: Color(0xFF18FFFF),
+        onChanged: onChanged,
       ),
     );
   }

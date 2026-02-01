@@ -40,7 +40,7 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
+  static FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyB8HrIBZ7Z3pZ2T3vDyw2pgZXfMgASMFSQ',
     appId: '1:1000786214522:web:3596e37d992da2cbec05c3',
     messagingSenderId: '1000786214522',
@@ -50,7 +50,7 @@ class DefaultFirebaseOptions {
     measurementId: 'G-98D70Q69SS',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
+  static FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCsmPieRIo1wEI-uTn11jI1BhaTJDQvG8Y',
     appId: '1:1000786214522:android:8fa495763ebb00d1ec05c3',
     messagingSenderId: '1000786214522',
@@ -58,7 +58,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'foodie-c1ddc.firebasestorage.app',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
+  static FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCiYVCqnV1m3uI6qUpz1yVF-lM-rT854y4',
     appId: '1:1000786214522:ios:7888d864d84d9be4ec05c3',
     messagingSenderId: '1000786214522',
@@ -67,7 +67,7 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.flutterFoodroute',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
+  static FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCiYVCqnV1m3uI6qUpz1yVF-lM-rT854y4',
     appId: '1:1000786214522:ios:7888d864d84d9be4ec05c3',
     messagingSenderId: '1000786214522',
@@ -76,7 +76,7 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.flutterFoodroute',
   );
 
-  static const FirebaseOptions windows = FirebaseOptions(
+  static FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyB8HrIBZ7Z3pZ2T3vDyw2pgZXfMgASMFSQ',
     appId: '1:1000786214522:web:1081643079faa533ec05c3',
     messagingSenderId: '1000786214522',
